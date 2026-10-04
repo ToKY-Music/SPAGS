@@ -1,6 +1,7 @@
+/* STREAMING_CHUNK:Defining design tokens and base styles */
 :root {
 --bg-color: #f4efe6;
---panel-bg: rgba(255, 253, 249, 0.85);
+--panel-bg: rgba(255, 253, 249, 0.95);
 --text-primary: #3d342b;
 --text-secondary: #7c6f64;
 --accent-color: #b08d57;
@@ -8,27 +9,35 @@
 --border-color: #dfd5c3;
 --shadow: 0 4px 16px rgba(61, 52, 43, 0.08);
 }
-￼ {
+
+{
 box-sizing: border-box;
 margin: 0;
 padding: 0;
 font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 -webkit-tap-highlight-color: transparent;
 }
-body {
+
+html, body {
+width: 100%;
+height: 100%;
+/* モバイルブラウザのアドレスバー等によるはみ出しを防ぐためdvhを採用 */
+height: 100dvh;
 background-color: var(--bg-color);
 color: var(--text-primary);
 display: flex;
 justify-content: center;
 align-items: center;
-min-height: 100vh;
 overflow: hidden;
+position: fixed;
 }
+
+/* STREAMING_CHUNK:Styling app container and layout */
 .app-container {
 width: 100%;
-max-width: 414px; /* iPhone SE / Pro マックスの一般的なビュー幅を意識 */
-height: 100vh;
-max-height: 896px;
+max-width: 414px;
+height: 100%;
+height: 100dvh;
 background: linear-gradient(135deg, #fbf8f2 0%, #efe7d8 100%);
 display: flex;
 flex-direction: column;
@@ -36,25 +45,30 @@ position: relative;
 box-shadow: var(--shadow);
 overflow: hidden;
 }
+
 /* ヘッダー */
 .app-header {
-padding: 12px 16px;
+padding: 10px 16px;
 background-color: var(--panel-bg);
 border-bottom: 1px solid var(--border-color);
 display: flex;
 justify-content: space-between;
 align-items: center;
 z-index: 10;
+flex-shrink: 0;
 }
+
 .header-title h1 {
-font-size: 14px;
+font-size: 13px;
 font-weight: 600;
 color: var(--text-primary);
 }
+
 .version {
 font-size: 10px;
 color: var(--text-secondary);
 }
+
 .header-status {
 display: flex;
 align-items: center;
@@ -62,63 +76,76 @@ gap: 6px;
 font-size: 11px;
 color: var(--text-secondary);
 }
+
 .dot {
 width: 6px;
 height: 6px;
 background-color: #6b9a76;
 border-radius: 50%;
 }
-/* メインコンテンツ /
+
+/* メインコンテンツ（スクロール可能領域、フッターと重ならないよう下部にpadding確保） */
 .main-content {
 flex: 1;
 display: flex;
 flex-direction: column;
 overflow-y: auto;
-padding: 12px;
-gap: 12px;
-padding-bottom: 70px; / ナビゲーションバーの分 */
+padding: 10px 12px;
+gap: 10px;
+padding-bottom: 72px;
+-webkit-overflow-scrolling: touch;
 }
-/* 3Dビジュアルセクション */
+
+/* ビジュアルセクション（農村の背景画像エリア） */
 .visual-section {
 width: 100%;
-height: 220px;
-background-color: #e3d7c3;
+height: 200px;
+background-color: #d9c3a3;
 border-radius: 12px;
 position: relative;
 overflow: hidden;
-box-shadow: inset 0 2px 6px rgba(0,0,0,0.05);
+flex-shrink: 0;
+box-shadow: inset 0 2px 8px rgba(0,0,0,0.08);
+border: 1px solid var(--border-color);
 }
-#canvas-container canvas {
+
+.world-image-container {
+width: 100%;
+height: 100%;
+}
+
+.scene-bg-img {
+width: 100%;
+height: 100%;
+object-fit: cover;
 display: block;
-width: 100%;
-height: 100%;
+filter: brightness(0.95) contrast(1.05);
 }
-.atmosphere-overlay {
-position: absolute;
-top: 0;
-left: 0;
-width: 100%;
-height: 100%;
-background: linear-gradient(to bottom, rgba(255,255,255,0.1) 0%, rgba(61,52,43,0.15) 100%);
-pointer-events: none;
-}
+
 .scene-caption {
 position: absolute;
-bottom: 12px;
-left: 12px;
+bottom: 8px;
+left: 10px;
 color: #fff;
-text-shadow: 0 1px 3px rgba(0,0,0,0.6);
+text-shadow: 0 1px 4px rgba(0,0,0,0.8);
 pointer-events: none;
+background: rgba(0, 0, 0, 0.25);
+padding: 4px 8px;
+border-radius: 6px;
+backdrop-filter: blur(4px);
 }
+
 .scene-caption h2 {
-font-size: 13px;
+font-size: 12px;
 font-weight: 600;
 }
+
 .scene-caption p {
 font-size: 10px;
-opacity: 0.9;
+opacity: 0.95;
 }
-/* 対話セクション */
+
+/* STREAMING_CHUNK:Styling dialogue and interactive panels */
 .dialogue-section {
 background: var(--panel-bg);
 border: 1px solid var(--border-color);
@@ -128,87 +155,111 @@ display: flex;
 flex-direction: column;
 gap: 12px;
 box-shadow: var(--shadow);
+flex-shrink: 0;
 }
-.teacher-box {
+
+.character-box {
 display: flex;
 gap: 10px;
 align-items: flex-start;
 }
-.avatar-placeholder {
-width: 40px;
-height: 40px;
-background-color: #d8cbb8;
+
+.avatar-placeholder.cute {
+width: 44px;
+height: 44px;
+background: linear-gradient(135deg, #f5e6d3 0%, #eadbc8 100%);
 border-radius: 50%;
 display: flex;
 justify-content: center;
 align-items: center;
-font-size: 11px;
-color: var(--text-primary);
+font-size: 20px;
 flex-shrink: 0;
-border: 1px solid var(--border-color);
+border: 1.5px solid var(--accent-color);
+box-shadow: 0 2px 6px rgba(176, 141, 87, 0.2);
 }
+
 .speech-bubble {
 background-color: #fff;
 border: 1px solid var(--border-color);
-border-radius: 8px;
-padding: 10px;
+border-radius: 10px;
+padding: 10px 12px;
 font-size: 12px;
 line-height: 1.5;
 color: var(--text-primary);
 position: relative;
 flex: 1;
+box-shadow: 0 2px 5px rgba(0,0,0,0.03);
 }
+
+.speaker-name {
+display: block;
+font-size: 10px;
+font-weight: 700;
+color: var(--accent-color);
+margin-bottom: 2px;
+}
+
 .action-panel {
 display: flex;
 justify-content: center;
 }
+
 .primary-btn {
 width: 100%;
-padding: 10px;
-background-color: var(--accent-color);
+padding: 11px;
+background: linear-gradient(135deg, var(--accent-color) 0%, #967543 100%);
 color: white;
 border: none;
-border-radius: 8px;
-font-size: 13px;
+border-radius: 10px;
+font-size: 12px;
 font-weight: 600;
 cursor: pointer;
-transition: background-color 0.2s;
-box-shadow: 0 2px 4px rgba(176, 141, 87, 0.3);
+transition: transform 0.1s, opacity 0.2s;
+box-shadow: 0 3px 8px rgba(176, 141, 87, 0.35);
 }
+
 .primary-btn:active {
-background-color: var(--accent-hover);
 transform: scale(0.98);
+opacity: 0.9;
 }
-/* フッターナビゲーション */
+
+/* STREAMING_CHUNK:Styling bottom navigation bar */
 .app-nav {
 position: absolute;
 bottom: 0;
 left: 0;
 width: 100%;
-height: 60px;
+height: 58px;
 background-color: var(--panel-bg);
 border-top: 1px solid var(--border-color);
 display: flex;
 justify-content: space-around;
 align-items: center;
-backdrop-filter: blur(8px);
-z-index: 10;
+backdrop-filter: blur(10px);
+z-index: 20;
+padding-bottom: env(safe-area-inset-bottom);
 }
+
 .nav-item {
 background: none;
 border: none;
 display: flex;
 flex-direction: column;
 align-items: center;
-gap: 2px;
+gap: 3px;
 color: var(--text-secondary);
 cursor: pointer;
 font-size: 9px;
 flex: 1;
+padding: 6px 0;
+transition: color 0.2s;
 }
+
 .nav-item.active {
 color: var(--accent-color);
+font-weight: 600;
 }
+
 .nav-icon {
 font-size: 16px;
 }
