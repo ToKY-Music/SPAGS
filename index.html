@@ -1,72 +1,753 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>共生型手続き生成システム v0.1</title>
-<link rel="stylesheet" href="style.css">
-<!-- Three.js CDN -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>共生型手続き生成システム</title>
+    <style>
+        :root {
+            --bg-dark: #121212;
+            --window-bg: rgba(20, 15, 10, 0.85);
+            --window-border: #8b7355;
+            --text-main: #f4efe6;
+            --text-sub: #c4b5a2;
+            --accent: #b08d57;
+            --font-gothic: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif;
+            --font-mincho: "Hiragino Mincho ProN", "Yu Mincho", serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100dvh;
+            overflow: hidden;
+            background-color: var(--bg-dark);
+            font-family: var(--font-gothic);
+            color: var(--text-main);
+        }
+
+        .app-container {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+
+        .scene {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+            display: flex;
+            flex-direction: column;
+            background-color: #1a1a1a;
+        }
+
+        .scene.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .bg-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            background-size: cover;
+            background-position: center;
+        }
+        #scene-rural .bg-layer {
+            background-color: #1c261e;
+            background-image: url('img/nouson_bg.jpg');
+        }
+        #scene-lecture .bg-layer {
+            background-color: #241c19;
+            background-image: url('img/kougi_bg.jpg');
+        }
+
+        /* 農村キャラ配置 */
+        .rural-character-container {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            height: 85%;
+            max-height: 900px;
+            pointer-events: none;
+            z-index: 5;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+        }
+
+        .character-sprite {
+            height: 100%;
+            width: auto;
+            object-fit: contain;
+        }
+
+        /* 農村チャットUI (中央寄せ、はっきりとした境界線を持つウィンドウ) */
+        .rural-dialogue-ui {
+            position: absolute;
+            bottom: 25px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            max-width: 1000px; /* PCでの最大幅 */
+            padding: 20px 140px 20px 20px; /* ナビゲーションアイコンとの被りを避ける余白 */
+            background: var(--window-bg);
+            border: 2px solid var(--window-border);
+            border-radius: 12px;
+            backdrop-filter: blur(8px);
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            z-index: 10;
+            box-sizing: border-box;
+        }
+
+        /* スクロール可能なチャット履歴エリア */
+        .chat-history-area {
+            max-height: 25vh;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding-right: 10px;
+            scrollbar-width: thin;
+            scrollbar-color: var(--accent) transparent;
+        }
+        .chat-history-area::-webkit-scrollbar {
+            width: 6px;
+        }
+        .chat-history-area::-webkit-scrollbar-thumb {
+            background-color: var(--accent);
+            border-radius: 3px;
+        }
+
+        .message-block {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 5px;
+        }
+
+        .message-block.user {
+            align-items: flex-end;
+        }
+
+        .speaker-name {
+            font-family: var(--font-mincho);
+            font-size: 1.1rem;
+            color: var(--accent);
+            margin-bottom: 4px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.9);
+        }
+        .message-block.user .speaker-name {
+            color: #a0c0d0;
+        }
+
+        .message-text {
+            font-family: var(--font-mincho);
+            font-size: 1.1rem;
+            line-height: 1.6;
+            color: var(--text-main);
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.9);
+            background: rgba(0,0,0,0.4);
+            padding: 10px 15px;
+            border-radius: 8px;
+            display: inline-block;
+            max-width: 90%;
+        }
+        
+        .message-block.user .message-text {
+            background: rgba(176, 141, 87, 0.3);
+        }
+
+        .input-area {
+            width: 100%;
+            display: flex;
+            gap: 10px;
+            background: var(--window-bg);
+            border: 1px solid var(--window-border);
+            border-radius: 8px;
+            padding: 10px 15px;
+            backdrop-filter: blur(5px);
+            box-sizing: border-box;
+        }
+
+        .input-area input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: var(--text-main);
+            font-size: 1.1rem;
+            outline: none;
+        }
+
+        .input-area input::placeholder {
+            color: var(--text-sub);
+        }
+
+        .send-btn {
+            background: transparent;
+            border: none;
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 1rem;
+            transition: color 0.2s;
+        }
+
+        .send-btn:hover {
+            color: #ffd899;
+        }
+
+        /* 講義画面 PCレイアウト (上半分: 図解65% + 先生35%、下半分: チャット100%) */
+        .lecture-layout {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 2;
+            display: grid;
+            grid-template-columns: 65fr 35fr;
+            grid-template-rows: repeat(2, minmax(0, 1fr)); /* 上下高さ固定 */
+            padding: 15px;
+            gap: 15px;
+            box-sizing: border-box;
+        }
+
+        .lecture-visual-area {
+            grid-column: 1 / 2;
+            grid-row: 1 / 2;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            height: 100%;
+            min-width: 0; /* 65%の比率を厳密に保護 */
+        }
+
+        .visual-board {
+            background: #fffdf9;
+            border: 3px solid #332b26;
+            border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .visual-board img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .lecture-character-area {
+            grid-column: 2 / 3;
+            grid-row: 1 / 3; /* 上から下まで配置し下半分チャットの裏に重ねる */
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            z-index: 1;
+            min-width: 0; /* 35%の比率を厳密に保護 */
+            overflow: visible; /* 立ち絵の重なりを許容 */
+        }
+
+        .sensei-character {
+            height: 100%;
+            width: auto;
+            max-height: none;
+            max-width: none;
+            flex-shrink: 0;
+            object-fit: contain;
+            object-position: bottom center;
+        }
+
+        /* 講義チャットUI (画面下半分全体) */
+        .lecture-dialogue-ui {
+            grid-column: 1 / 3; /* 下半分全面 */
+            grid-row: 2 / 3;
+            background: var(--window-bg);
+            border: 2px solid var(--window-border);
+            border-radius: 12px;
+            padding: 15px 140px 20px 20px; /* 右下のナビゲーションアイコンと重ならないよう右側に余白確保 */
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            gap: 10px;
+            z-index: 10;
+            backdrop-filter: blur(8px);
+            height: 100%;
+            min-height: 0; /* 画面枠を超えて縦に広がるのを防止 */
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+
+        .lecture-chat-history {
+            flex: 1;
+            min-height: 0; /* フレックスコンテナ内スクロール制御 */
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            padding-right: 10px;
+            padding-bottom: 15px; /* 下部の余白確保 */
+            scrollbar-width: thin;
+            scrollbar-color: var(--accent) transparent;
+        }
+        .lecture-chat-history::-webkit-scrollbar { width: 6px; }
+        .lecture-chat-history::-webkit-scrollbar-thumb { background-color: var(--accent); border-radius: 3px; }
+
+        /* ボタン群 (OK / 質問) */
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 5px;
+        }
+        .action-btn {
+            background: rgba(176, 141, 87, 0.2);
+            border: 1px solid var(--accent);
+            color: var(--text-main);
+            padding: 8px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background 0.2s;
+        }
+        .action-btn:hover {
+            background: rgba(176, 141, 87, 0.5);
+        }
+        .action-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* グローバルナビゲーション (PC配置) */
+        .global-nav {
+            position: absolute;
+            bottom: 35px;
+            right: max(calc(10% + 20px), calc(50% - 480px)); /* 農村チャットウィンドウ右下に配置 */
+            display: flex;
+            gap: 20px;
+            z-index: 20;
+            transition: right 0.3s ease;
+        }
+
+        /* 先生画面アクティブ時のナビゲーション位置 */
+        #scene-lecture.active ~ .global-nav {
+            right: 35px;
+            bottom: 35px;
+        }
+
+        .nav-btn {
+            background: transparent;
+            border: none;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: rgba(244, 239, 230, 0.6);
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: var(--font-gothic);
+        }
+
+        .nav-btn:hover, .nav-btn.active {
+            color: var(--accent);
+        }
+
+        .nav-btn .icon {
+            font-size: 22px;
+            margin-bottom: 2px;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.8));
+        }
+
+        .nav-btn .label {
+            font-size: 0.75rem;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.9);
+        }
+
+        @media screen and (max-width: 768px) {
+            /* SP画面専用 固定フッター */
+            .global-nav, #scene-lecture.active ~ .global-nav {
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                height: 60px;
+                padding-bottom: env(safe-area-inset-bottom, 0px);
+                background: rgba(20, 15, 10, 0.95);
+                border-top: 1px solid var(--window-border);
+                box-shadow: 0 -4px 12px rgba(0,0,0,0.6);
+                display: flex;
+                justify-content: space-around;
+                align-items: center;
+                z-index: 100;
+                gap: 0;
+            }
+
+            /* 農村 SP */
+            .rural-character-container {
+                height: 70%;
+            }
+            .rural-dialogue-ui {
+                width: 94%;
+                padding: 12px;
+                bottom: calc(70px + env(safe-area-inset-bottom, 0px)); /* フッターと絶対被らない位置に固定 */
+                max-height: 45vh;
+            }
+            .chat-history-area { max-height: 25vh; }
+            .message-text { font-size: 0.95rem; }
+
+            /* 先生講義 SPレイアウト */
+            .lecture-layout {
+                grid-template-columns: 60fr 40fr;
+                /* フッターの高さを除いた全高でレイアウト構築 */
+                height: calc(100dvh - 60px - env(safe-area-inset-bottom, 0px));
+                grid-template-rows: 45% 55%;
+                padding: 8px;
+                gap: 8px;
+                padding-top: env(safe-area-inset-top, 8px);
+            }
+
+            .lecture-visual-area {
+                grid-column: 1 / 3;
+                grid-row: 1 / 2;
+                padding: 0;
+                height: 100%;
+            }
+            .visual-board { border-width: 2px; }
+
+            /* 下半分の左側から中央：チャットウィンドウ */
+            .lecture-dialogue-ui {
+                position: relative;
+                grid-column: 1 / 2;
+                grid-row: 2 / 3;
+                width: 100%;
+                height: 100%;
+                min-height: 0;
+                left: auto;
+                bottom: auto;
+                margin-bottom: 0;
+                padding: 10px;
+                border-width: 1.5px;
+                z-index: 10;
+            }
+            
+            .lecture-chat-history {
+                max-height: none;
+                flex: 1;
+                min-height: 0;
+            }
+
+            /* 下半分の中央から右端：先生の立ち絵（上半身のみ拡大表示） */
+            .lecture-character-area {
+                position: relative;
+                grid-column: 2 / 3;
+                grid-row: 2 / 3;
+                width: 100%;
+                height: 100%;
+                bottom: auto;
+                right: auto;
+                display: flex;
+                justify-content: center;
+                align-items: flex-start;
+                overflow: hidden;
+                z-index: 5;
+            }
+
+            .sensei-character {
+                height: 135%;
+                width: 135%;
+                max-height: none;
+                max-width: none;
+                object-fit: cover;
+                object-position: top center;
+            }
+
+            /* SP用の入力エリアおよびボタン位置調整 */
+            .input-area {
+                padding: 6px 10px;
+            }
+            .input-area input { font-size: 0.9rem; }
+            .action-buttons {
+                flex-direction: column;
+                gap: 6px;
+                margin-top: 4px;
+            }
+            .action-btn { padding: 6px 12px; font-size: 0.85rem;}
+        }
+
+    </style>
 </head>
 <body>
-<div class="app-container">
-<!-- ヘッダー -->
-<header class="app-header">
-<div class="header-title">
-<h1>共生型手続き生成システム</h1>
-<span class="version">v0.1</span>
-</div>
-<div class="header-status">
-<span class="dot"></span>
-<span class="time">2026年 10月4日 09:34</span>
-</div>
-</header>
-<!-- メインコンテンツ領域 -->
-<main class="main-content">
-<!-- 3D / 背景ビジュアル領域（寂れた西洋農村の雰囲気） -->
-<section id="canvas-container" class="visual-section">
-<!-- Three.js Canvasがここに挿入されます -->
-<div class="atmosphere-overlay"></div>
-<div class="scene-caption">
-<h2>静かな農村の午後</h2>
-<p>関係性の輪郭が、ゆっくりと結ばれていく。</p>
-</div>
-</section>
-<!-- インタラクティブ対話・レクチャー領域 -->
-<section class="dialogue-section">
-<div class="teacher-box">
-<div class="avatar-area">
-<div class="avatar-placeholder">先生</div>
-</div>
-<div class="speech-bubble">
-<p>こんにちは！今日は『構造』と『プロセス』の関係性について、圏論的な視点からお話ししますね。</p>
-</div>
-</div>
-<div class="action-panel">
-<button class="primary-btn" id="generate-btn">手続きを生成する</button>
-</div>
-</section>
-</main>
-<!-- フッターナビゲーション（iPhone SE等で押しやすい下部バー） -->
-<nav class="app-nav">
-<button class="nav-item active">
-<span class="nav-icon">🌾</span>
-<span class="nav-label">ダッシュボード</span>
-</button>
-<button class="nav-item">
-<span class="nav-icon">📜</span>
-<span class="nav-label">ログ</span>
-</button>
-<button class="nav-item">
-<span class="nav-icon">👧</span>
-<span class="nav-label">かわい子ちゃん</span>
-</button>
-<button class="nav-item">
-<span class="nav-icon">📖</span>
-<span class="nav-label">先生のレクチャー</span>
-</button>
-</nav>
-</div>
-<script src="main.js"></script>
+    <div class="app-container">
+        
+        <!-- 農村シーン -->
+        <section id="scene-rural" class="scene active">
+            <div class="bg-layer"></div>
+            
+            <!-- キャラ中央配置 -->
+            <div class="rural-character-container">
+                <img src="img/kawaiko_tachie.png" class="character-sprite" alt="かわい子ちゃん">
+            </div>
+
+            <!-- チャットUI（枠線・背景明確化） -->
+            <div class="rural-dialogue-ui">
+                <div class="chat-history-area" id="rural-chat-history">
+                    <!-- 初期メッセージ -->
+                    <div class="message-block">
+                        <span class="speaker-name">かわい子ちゃん</span>
+                        <div class="message-text">……あ、こんにちは。こんな静かな農村に、だれか来たんだね。</div>
+                    </div>
+                </div>
+                
+                <div class="input-area">
+                    <input type="text" id="rural-input" placeholder="メッセージを入力...">
+                    <button class="send-btn" id="rural-send">
+                        <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path></svg>
+                        送信
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- 先生講義シーン -->
+        <section id="scene-lecture" class="scene">
+            <div class="bg-layer"></div>
+            
+            <div class="lecture-layout">
+                <!-- ビジュアルエリア (65%比率固定) -->
+                <div class="lecture-visual-area">
+                    <div class="visual-board">
+                        <img src="https://dummyimage.com/800x450/fffdf9/3d342b.png&text=Structure+vs+Process+Diagram" alt="講義図解">
+                    </div>
+                </div>
+
+                <!-- 先生立ち絵 (35%比率固定) -->
+                <div class="lecture-character-area">
+                    <img src="img/sensei_tachie.png" class="character-sprite sensei-character" alt="先生">
+                </div>
+
+                <!-- 講義用チャットUI -->
+                <div class="lecture-dialogue-ui">
+                    <div class="lecture-chat-history" id="lecture-chat-history">
+                        <!-- ここに講義ややり取りが追加される -->
+                    </div>
+
+                    <!-- アクションボタン (OK / 質問) -->
+                    <div class="action-buttons" id="lecture-actions">
+                        <button class="action-btn" id="btn-ok" style="display:none;">OK</button>
+                        <button class="action-btn" id="btn-question" style="display:none;">質問</button>
+                    </div>
+
+                    <!-- 質問入力エリア -->
+                    <div class="input-area" id="lecture-input-area" style="display:none;">
+                        <input type="text" id="lecture-input" placeholder="質問を入力...">
+                        <button class="send-btn" id="lecture-send">送信</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- グローバルナビゲーション (SPでは固定フッター化) -->
+        <nav class="global-nav">
+            <button class="nav-btn" id="nav-settings">
+                <span class="icon">⚙️</span>
+                <span class="label">設定</span>
+            </button>
+            <button class="nav-btn active" id="nav-rural">
+                <span class="icon">🌾</span>
+                <span class="label">農村へ</span>
+            </button>
+            <button class="nav-btn" id="nav-lecture">
+                <span class="icon">👩‍🏫</span>
+                <span class="label">先生</span>
+            </button>
+        </nav>
+
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // -- Navigation --
+            const navRural = document.getElementById('nav-rural');
+            const navLecture = document.getElementById('nav-lecture');
+            const navBtns = document.querySelectorAll('.nav-btn');
+            
+            function switchScene(targetSceneId, activeButton) {
+                document.querySelectorAll('.scene').forEach(scene => scene.classList.remove('active'));
+                document.getElementById(targetSceneId).classList.add('active');
+                navBtns.forEach(btn => btn.classList.remove('active'));
+                if(activeButton) activeButton.classList.add('active');
+                
+                // 先生シーンに切り替わった時、初回講義を開始
+                if(targetSceneId === 'scene-lecture' && lectureParagraphIndex === 0) {
+                    playNextLecture();
+                }
+            }
+
+            navRural.addEventListener('click', () => switchScene('scene-rural', navRural));
+            navLecture.addEventListener('click', () => switchScene('scene-lecture', navLecture));
+
+            // -- Helper: Add Message to History --
+            function appendMessage(containerId, speaker, text, isUser) {
+                const container = document.getElementById(containerId);
+                if(!container) return;
+
+                const block = document.createElement('div');
+                block.className = `message-block ${isUser ? 'user' : ''}`;
+                
+                const nameSpan = document.createElement('span');
+                nameSpan.className = 'speaker-name';
+                nameSpan.textContent = speaker;
+
+                const textDiv = document.createElement('div');
+                textDiv.className = 'message-text';
+                textDiv.textContent = text;
+
+                block.appendChild(nameSpan);
+                block.appendChild(textDiv);
+                container.appendChild(block);
+
+                // 自動スクロール
+                container.scrollTop = container.scrollHeight;
+            }
+
+            // -- Rural Logic --
+            const ruralInput = document.getElementById('rural-input');
+            const ruralSendBtn = document.getElementById('rural-send');
+            
+            const kawaiikoResponses = [
+                "ふふ、そうなんだね。",
+                "風の音が少し変わった気がする。新しい手続きの芽生えかな……？",
+                "この道端で待ってるとね、時々すごく面白い世界の構造がふっと浮かんでくるんだよ。",
+                "なんだか嬉しいな。次はどんな景色が見られるのかな。"
+            ];
+
+            function handleRuralChat() {
+                const text = ruralInput.value.trim();
+                if (!text) return;
+                
+                // User message
+                appendMessage('rural-chat-history', 'あなた', text, true);
+                ruralInput.value = '';
+
+                // Kawaiiko message
+                setTimeout(() => {
+                    const reply = kawaiikoResponses[Math.floor(Math.random() * kawaiikoResponses.length)];
+                    appendMessage('rural-chat-history', 'かわい子ちゃん', reply, false);
+                }, 600);
+            }
+
+            ruralSendBtn.addEventListener('click', handleRuralChat);
+            ruralInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') handleRuralChat();
+            });
+
+
+            // -- Lecture Logic --
+            const lectureLectures = [
+                "こんにちは！今日は『構造』と『プロセス』の関係性について、圏論的な視座からお話ししますね。物質的な『実体』ではなく、それらが織りなす『関係の網の目』に注目することが大切です。分かりますか？",
+                "素晴らしい。では次に、その『関係の網の目』をどう記述するかですが、圏論では対象（オブジェクト）の内部構造を忘れ、対象間の射（プロセス、関係）のみで全てを語ろうとします。分かりますか？",
+                "つまり、あなたが「何であるか」ではなく、「他者とどう関わっているか」があなたを定義するということです。これが共生型システムの基礎的な考え方になります。分かりますか？"
+            ];
+            let lectureParagraphIndex = 0;
+            
+            const btnOk = document.getElementById('btn-ok');
+            const btnQuestion = document.getElementById('btn-question');
+            const lectureInputArea = document.getElementById('lecture-input-area');
+            const lectureInput = document.getElementById('lecture-input');
+            const lectureSendBtn = document.getElementById('lecture-send');
+
+            function showActionButtons(show) {
+                btnOk.style.display = show ? 'block' : 'none';
+                btnQuestion.style.display = show ? 'block' : 'none';
+            }
+
+            function playNextLecture() {
+                if (lectureParagraphIndex < lectureLectures.length) {
+                    showActionButtons(false);
+                    lectureInputArea.style.display = 'none';
+                    
+                    // 擬似的なタイピング待機
+                    setTimeout(() => {
+                        appendMessage('lecture-chat-history', '先生', lectureLectures[lectureParagraphIndex], false);
+                        lectureParagraphIndex++;
+                        // 講義文言の末尾は必ず「分かりますか？」なのでボタンを表示
+                        setTimeout(() => {
+                            showActionButtons(true);
+                            // スクロールを確実にする
+                            const container = document.getElementById('lecture-chat-history');
+                            container.scrollTop = container.scrollHeight;
+                        }, 500);
+                    }, 500);
+                } else {
+                    appendMessage('lecture-chat-history', '先生', '本日の講義はここまでです。お疲れ様でした！', false);
+                }
+            }
+
+            btnOk.addEventListener('click', () => {
+                appendMessage('lecture-chat-history', 'あなた', 'OKです。次をお願いします。', true);
+                playNextLecture();
+            });
+
+            btnQuestion.addEventListener('click', () => {
+                appendMessage('lecture-chat-history', 'あなた', '質問があります。', true);
+                showActionButtons(false);
+                
+                setTimeout(() => {
+                    appendMessage('lecture-chat-history', '先生', 'どのような質問ですか？', false);
+                    lectureInputArea.style.display = 'flex';
+                    lectureInput.focus();
+                    
+                    // スクロール
+                    const container = document.getElementById('lecture-chat-history');
+                    container.scrollTop = container.scrollHeight;
+                }, 600);
+            });
+
+            function handleLectureQuestionSubmit() {
+                const text = lectureInput.value.trim();
+                if(!text) return;
+
+                appendMessage('lecture-chat-history', 'あなた', text, true);
+                lectureInput.value = '';
+                lectureInputArea.style.display = 'none';
+
+                setTimeout(() => {
+                    appendMessage('lecture-chat-history', '先生', 'なるほど、良い着眼点ですね。それについては……（回答中）。疑問は解消されましたでしょうか。続きを進めてもよろしいですか？分かりますか？', false);
+                    setTimeout(() => {
+                        showActionButtons(true);
+                    }, 500);
+                }, 1000);
+            }
+
+            lectureSendBtn.addEventListener('click', handleLectureQuestionSubmit);
+            lectureInput.addEventListener('keypress', (e) => {
+                if(e.key === 'Enter') handleLectureQuestionSubmit();
+            });
+
+        });
+    </script>
 </body>
 </html>
