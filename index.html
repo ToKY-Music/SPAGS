@@ -1,72 +1,113 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>共生型手続き生成システム v0.1</title>
-<link rel="stylesheet" href="style.css">
-<!-- Three.js CDN -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>共生型手続き生成システム</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<div class="app-container">
-<!-- ヘッダー -->
-<header class="app-header">
-<div class="header-title">
-<h1>共生型手続き生成システム</h1>
-<span class="version">v0.1</span>
-</div>
-<div class="header-status">
-<span class="dot"></span>
-<span class="time">2026年 10月4日 09:34</span>
-</div>
-</header>
-<!-- メインコンテンツ領域 -->
-<main class="main-content">
-<!-- 3D / 背景ビジュアル領域（寂れた西洋農村の雰囲気） -->
-<section id="canvas-container" class="visual-section">
-<!-- Three.js Canvasがここに挿入されます -->
-<div class="atmosphere-overlay"></div>
-<div class="scene-caption">
-<h2>静かな農村の午後</h2>
-<p>関係性の輪郭が、ゆっくりと結ばれていく。</p>
-</div>
-</section>
-<!-- インタラクティブ対話・レクチャー領域 -->
-<section class="dialogue-section">
-<div class="teacher-box">
-<div class="avatar-area">
-<div class="avatar-placeholder">先生</div>
-</div>
-<div class="speech-bubble">
-<p>こんにちは！今日は『構造』と『プロセス』の関係性について、圏論的な視点からお話ししますね。</p>
-</div>
-</div>
-<div class="action-panel">
-<button class="primary-btn" id="generate-btn">手続きを生成する</button>
-</div>
-</section>
-</main>
-<!-- フッターナビゲーション（iPhone SE等で押しやすい下部バー） -->
-<nav class="app-nav">
-<button class="nav-item active">
-<span class="nav-icon">🌾</span>
-<span class="nav-label">ダッシュボード</span>
-</button>
-<button class="nav-item">
-<span class="nav-icon">📜</span>
-<span class="nav-label">ログ</span>
-</button>
-<button class="nav-item">
-<span class="nav-icon">👧</span>
-<span class="nav-label">かわい子ちゃん</span>
-</button>
-<button class="nav-item">
-<span class="nav-icon">📖</span>
-<span class="nav-label">先生のレクチャー</span>
-</button>
-</nav>
-</div>
-<script src="main.js"></script>
+    <div class="app-container">
+        
+        <!-- 画面1: 農村画面（かわい子ちゃん） -->
+        <section id="scene-rural" class="scene active">
+            <!-- 背景画像（後で差し替え可能） -->
+            <img src="https://placehold.co/1920x1080/d9c3a3/5a4a3b?text=Rural+Background" class="bg-image" alt="農村背景">
+            
+            <!-- 立ち絵エリア -->
+            <div class="character-container">
+                <img src="https://placehold.co/400x800/transparent/3d342b?text=Kawaiiko-chan" class="character-sprite" alt="かわい子ちゃん">
+            </div>
+
+            <!-- メッセージウィンドウ領域 -->
+            <div class="dialogue-ui">
+                <div class="message-window">
+                    <span class="speaker-name">かわい子ちゃん</span>
+                    <p class="message-text" id="rural-message">……あ、こんにちは。こんな静かな農村に、だれか来たんだね。</p>
+                </div>
+                
+                <!-- チャット入力欄 -->
+                <div class="input-area">
+                    <input type="text" id="rural-input" placeholder="メッセージを入力...">
+                    <button class="send-btn" id="rural-send">
+                        <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path></svg>
+                        送信
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- 画面2: 先生の講義画面 -->
+        <section id="scene-lecture" class="scene">
+            <!-- 背景画像（後で差し替え可能） -->
+            <img src="https://placehold.co/1920x1080/8b7355/f4efe6?text=Lecture+Room+Background" class="bg-image" alt="講義室背景">
+            
+            <div class="lecture-content-wrapper">
+                <!-- ビジュアルイメージと図式エリア -->
+                <div class="visual-board-container">
+                    <div class="visual-board">
+                        <div class="board-header">ビジュアルイメージと図式</div>
+                        <div class="board-content">
+                            <!-- 講義図解（プレースホルダー） -->
+                            <img src="https://placehold.co/800x450/fffdf9/3d342b?text=Structure+vs+Process+Diagram" alt="講義図解" style="width:100%; height:auto; border-radius: 4px;">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 立ち絵エリア（先生） -->
+                <div class="character-container sensei-container">
+                    <img src="https://placehold.co/400x800/transparent/3d342b?text=Sensei" class="character-sprite" alt="先生">
+                </div>
+
+                <!-- SP版でのみ表示されるメッセージウィンドウ -->
+                <div class="dialogue-ui sp-only-dialogue">
+                     <div class="message-window">
+                        <p class="message-text" id="sp-lecture-message">こんにちは！今日は『構造』と『プロセス』の関係性について、圏論的な視座からお話ししますね。物質的な『実体』ではなく、それらが織りなす『関係の網の目』に注目することが大切です。</p>
+                    </div>
+                </div>
+
+                <!-- チャット履歴＆入力エリア（PC版は右サイド、SP版は下部） -->
+                <div class="chat-sidebar">
+                    <div class="chat-header">ユーザーからのチャットウィンドウ</div>
+                    <div class="chat-history" id="lecture-chat-history">
+                        <!-- チャット履歴がここに追加される -->
+                    </div>
+                    <div class="input-area">
+                        <input type="text" id="lecture-input" placeholder="質問を入力...">
+                        <button class="send-btn" id="lecture-send">送信</button>
+                    </div>
+                </div>
+            </div>
+            
+             <!-- PC版でのみ表示されるメッセージウィンドウ (先生のセリフ) -->
+             <div class="dialogue-ui pc-only-dialogue">
+                <div class="message-window">
+                    <p class="message-text" id="pc-lecture-message">こんにちは！今日は『構造』と『プロセス』の関係性について、圏論的な視座からお話ししますね。物質的な『実体』ではなく、それらが織りなす『関係の網の目』に注目することが大切です。</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 共通ナビゲーション（右下配置） -->
+        <nav class="global-nav">
+            <button class="nav-btn" id="nav-settings">
+                <span class="icon">⚙️</span>
+                <span class="label">設定</span>
+            </button>
+            <button class="nav-btn" id="nav-log">
+                <span class="icon">📜</span>
+                <span class="label">ログ</span>
+            </button>
+            <button class="nav-btn active" id="nav-rural">
+                <span class="icon">🌾</span>
+                <span class="label">農村へ</span>
+            </button>
+            <button class="nav-btn" id="nav-lecture">
+                <span class="icon">👩‍🏫</span>
+                <span class="label">先生</span>
+            </button>
+        </nav>
+
+    </div>
+    <script src="main.js"></script>
 </body>
 </html>
