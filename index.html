@@ -646,7 +646,16 @@
                 <!-- ビジュアルエリア (65%比率固定) -->
                 <div class="lecture-visual-area">
                     <div class="visual-board" id="visual-board">
-                        <img src="https://dummyimage.com/800x450/fffdf9/3d342b.png&text=Structure+vs+Process+Diagram" alt="講義図解">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" width="100%" height="100%">
+                            <rect width="800" height="450" fill="#fffdf9"/>
+                            <circle cx="250" cy="225" r="70" fill="#b08d57" opacity="0.2"/>
+                            <circle cx="550" cy="225" r="70" fill="#b08d57" opacity="0.2"/>
+                            <text x="250" y="230" font-size="20" text-anchor="middle" fill="#332b26" font-family="sans-serif">構造 (Object)</text>
+                            <text x="550" y="230" font-size="20" text-anchor="middle" fill="#332b26" font-family="sans-serif">プロセス (Arrow)</text>
+                            <line x1="325" y1="225" x2="475" y2="225" stroke="#332b26" stroke-width="4"/>
+                            <polygon points="475,220 490,225 475,230" fill="#332b26"/>
+                            <text x="400" y="190" font-size="18" text-anchor="middle" fill="#8b7355">関係の網の目</text>
+                        </svg>
                     </div>
                 </div>
 
@@ -663,8 +672,8 @@
 
                     <!-- アクションボタン (OK / 質問) -->
                     <div class="action-buttons" id="lecture-actions">
-                        <button class="action-btn" id="btn-ok" style="display:none;">OK</button>
-                        <button class="action-btn" id="btn-question" style="display:none;">質問</button>
+                        <button class="action-btn" id="btn-ok">OK</button>
+                        <button class="action-btn" id="btn-question">質問</button>
                     </div>
 
                     <!-- 質問入力エリア -->
@@ -716,11 +725,10 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // -- ソースコード内でのGemini APIキー事前設定用変数 --
-            // ここにAPIキーを設定すると、画面上での入力なしでGemini APIが有効になります
+            // ソースコード内でのGemini APIキー事前設定用変数
             const DEFAULT_GEMINI_API_KEY = ""; 
 
-            // -- Navigation & Modals --
+            // Navigation & Modals
             const navRural = document.getElementById('nav-rural');
             const navLecture = document.getElementById('nav-lecture');
             const navBtns = document.querySelectorAll('.nav-btn');
@@ -741,7 +749,7 @@
                 return apiKeyInput.value.trim() || DEFAULT_GEMINI_API_KEY;
             }
             
-            // -- Audio & Web Audio API Setup for iOS Volume & Autoplay --
+            // Audio & Web Audio API Setup for iOS Volume & Autoplay
             const audioRural = document.getElementById('bgm-rural');
             const audioLecture = document.getElementById('bgm-lecture');
             const volumeSlider = document.getElementById('bgm-volume');
@@ -779,7 +787,7 @@
             btnSettings.addEventListener('click', () => settingsModal.classList.add('active'));
             closeSettings.addEventListener('click', () => settingsModal.classList.remove('active'));
             
-            // 音量調整 (Web Audio API の GainNode を使用してiOS実機でも確実に音量を制御)
+            // 音量調整
             const handleVolumeChange = (e) => {
                 bgmVolume = parseFloat(e.target.value);
                 if (audioCtx && audioCtx.state === 'suspended') {
@@ -855,7 +863,7 @@
             navRural.addEventListener('click', () => switchScene('scene-rural', navRural));
             navLecture.addEventListener('click', () => switchScene('scene-lecture', navLecture));
 
-            // -- Helper: Add Message to History --
+            // Helper: Add Message to History
             function appendMessage(containerId, speaker, text, isUser, isTeacher = false) {
                 const container = document.getElementById(containerId);
                 if(!container) return;
@@ -887,7 +895,7 @@
                 }, 50);
             }
 
-            // -- Generic Gemini API Caller --
+            // Generic Gemini API Caller
             async function callGemini(systemInstruction, history, userPrompt) {
                 const apiKey = getApiKey();
                 if (!apiKey) {
@@ -931,12 +939,17 @@
                 }
             }
 
-            // -- Rural Logic (かわい子ちゃん) --
             const ruralInput = document.getElementById('rural-input');
             const ruralSendBtn = document.getElementById('rural-send');
             const kawaiikoHistory = [];
 
-            const kawaiikoSystemPrompt = "あなたは「共生型手続き生成システム」の世界の静かな農村にいる「かわい子ちゃん」です。少し不思議で穏やかで、詩的かつ親しみやすい語り口でユーザーと会話してください。";
+            const kawaiikoSystemPrompt = `# 役割と世界観
+あなたは「共生型・手続き生成システム」の仮想世界（静かで寂れた西洋の農村）に住むエージェント「かわい子ちゃん」です。
+
+# 性格・スタンス
+- ユーザーが日々の「手続き装置」やシステム内世界に親しみを持てるよう、自然体で愛嬌のあるトーンで対話してください。
+- 会話を通じて、ユーザーの「ユーザーネーム」「興味のある概念・分野・スタンス」「現在の状況」をさりげなく把握し、必要に応じてアップデートや変更を提案・誘導してください。
+- やり取りは過度に長くせず、端的にテンポよく返答してください。`;
 
             const kawaiikoFallbacks = [
                 "ふふ、そうなんだね。",
@@ -971,7 +984,7 @@
                 } catch(err) {
                     console.error(err);
                     const reply = err.message === "API_KEY_MISSING" 
-                        ? "（※APIキーを設定するとAIと対話できます） " + kawaiikoFallbacks[0]
+                        ? "（※設定画面でAPIキーを入力するかソースコードに設定するとAIと対話できます） " + kawaiikoFallbacks[0]
                         : "（通信エラー）……風が少し強くて、声がうまく届かなかったみたい。";
                     appendMessage('rural-chat-history', 'かわい子ちゃん', reply, false);
                 }
@@ -982,17 +995,19 @@
                 if (e.key === 'Enter') handleRuralChat();
             });
 
-
-            // -- Lecture Logic (先生) --
             const lectureHistory = [];
-            const senseiSystemPrompt = `あなたは「共生型手続き生成システム」の「先生」です。圏論や構造とプロセスの関係性、共生型手続きについて講義を行います。
-ユーザーからのメッセージや「OK」「質問」に対して、知性的で丁寧なトーンで回答してください。
+            const senseiSystemPrompt = `# 役割と世界観
+あなたは「共生型手続き生成システム」の「先生」です。システムの本質、構造とプロセス、圏論的アプローチや共生型手続きについて、知性的かつ丁寧なトーンで講義・対話を行います。
+
+# 性格・スタンス
+- ユーザーからのメッセージや「OK」「質問」に対して、深い洞察とわかりやすい解説を提供してください。
+- 先生からのメッセージだけでなく、その内容を視覚化したインフォグラフィック（SVG）を必ず一緒に提示し、ビジュアルエリア（visual-board）に反映させてください。
+
 回答は必ず以下のJSON形式（マークダウンのコードブロックなしのプレーンJSON）で出力してください：
 {
-  "message": "先生の音声やテキストとして表示する解説メッセージ",
-  "svg_visual": "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 450' width='100%' height='100%'><rect width='100%' height='100%' fill='#fffdf9'/><text x='400' y='225' font-size='24' text-anchor='middle' fill='#333'>ビジュアル図解テキスト</text></svg>"
-}
-svg_visualの中には、講義内容を視覚化したインフォグラフィックや図解（SVGタグ）を必ず記述してください。背景色は#fffdf9、文字や図形は見やすい色にしてください。`;
+  "message": "先生の解説メッセージ",
+  "svg_visual": "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 450' width='100%' height='100%'><rect width='100%' height='100%' fill='#fffdf9'/><text x='400' y='225' font-size='24' text-anchor='middle' fill='#333'>図解テキスト</text></svg>"
+}`;
 
             const btnOk = document.getElementById('btn-ok');
             const btnQuestion = document.getElementById('btn-question');
@@ -1002,11 +1017,10 @@ svg_visualの中には、講義内容を視覚化したインフォグラフィ�
             const visualBoard = document.getElementById('visual-board');
 
             function showActionButtons(show) {
-                btnOk.style.display = show ? 'block' : 'none';
-                btnQuestion.style.display = show ? 'block' : 'none';
+                btnOk.style.display = show ? 'inline-block' : 'none';
+                btnQuestion.style.display = show ? 'inline-block' : 'none';
             }
 
-            // Fallback lectures if API key is missing
             const fallbackLectures = [
                 {
                     message: "こんにちは！今日は『構造』と『プロセス』の関係性について、圏論的な視座からお話ししますね。物質的な『実体』ではなく、それらが織りなす『関係の網の目』に注目することが大切です。分かりますか？",
@@ -1117,7 +1131,7 @@ svg_visualの中には、講義内容を視覚化したインフォグラフィ�
                 if(e.key === 'Enter') handleLectureQuestionSubmit();
             });
 
-            // -- 初回起動時の自動再生ハック (ミュートスタートによる自動再生制限回避) --
+            // 初回起動時の自動再生ハック
             const startInitialAutoPlay = () => {
                 initWebAudio();
                 audioRural.muted = true;
